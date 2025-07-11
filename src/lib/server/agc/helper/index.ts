@@ -4,8 +4,8 @@ import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 import { LLM } from '../llm';
 
-const userAgent =
-	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0';
+export const userAgent =
+	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36';
 
 export const getArticleContents = async (
 	fetch: App.Fetch,
@@ -38,7 +38,7 @@ export const getArticleContents = async (
 		const cleanContent = purify.sanitize(content || '');
 		if (!content || !textContent || !(siteName && title)) return null;
 		const source = { url: link, siteName };
-		console.log('Article Fetched\n');
+		console.log('✨ Article Fetched');
 		return { content: cleanContent, textContent, title, source };
 	} catch {
 		return null;
@@ -52,6 +52,7 @@ export const rephrase = async (articles: App.ArticleContents[]): Promise<App.Art
 			apiKeys: { gemini: env.PRIVATE_GEMINI_KEY }
 		});
 
+		console.log('⏳ Rephrase in process');
 		const result = await llm.rephrase({ title, content });
 		return { ...result, pubDate, source };
 	});

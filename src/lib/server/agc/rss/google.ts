@@ -1,5 +1,5 @@
 import RSSParser from 'rss-parser';
-import { getArticleContents } from '../helper';
+import { getArticleContents, userAgent } from '../helper';
 
 const isValidUrl = (url: string): boolean => {
 	try {
@@ -22,16 +22,15 @@ const fetchArticleUrl = async (
 	payload: { 'f.req': string }
 ): Promise<string | null> => {
 	try {
-		console.log('🔗 Resolving Article Url');
+		console.log('🔗 Resolving Article URL');
 		const headers = {
 			'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-			'User-Agent':
-				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
+			'User-Agent': userAgent
 		};
 
 		const response = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute', {
-			method: 'POST',
 			headers,
+			method: 'POST',
 			body: new URLSearchParams(payload).toString()
 		});
 
@@ -41,7 +40,7 @@ const fetchArticleUrl = async (
 		if (!isValidUrl(articleUrl)) return null;
 		return articleUrl;
 	} catch (e) {
-		console.error('Failed to Fetch Article Url', { cause: e });
+		console.error('Failed to Fetch Article URL', { cause: e });
 		return null;
 	}
 };
@@ -70,6 +69,7 @@ const fetchGnewsArticle = async (
 		const articleUrl = await fetchArticleUrl(fetch, payload);
 		if (!articleUrl) return null;
 
+		console.log(`🔁 Redirecting to: ${articleUrl}`);
 		const content = await getArticleContents(fetch, articleUrl);
 		return content;
 	} catch (e) {

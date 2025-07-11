@@ -8,9 +8,9 @@ export const GET = async ({ fetch }) => {
 	try {
 		const newsFeed = new NewsFeed({ fetch, newsApi: 'google' });
 		const contents = (await newsFeed.fetchRssFeeds()) || [];
-		console.log('Fetching Articles Done..');
+		console.log('✅ Fetching Articles Done..');
 		const rephrased = await rephrase(contents);
-		console.log(rephrased);
+		console.log('🎉 All Task Finished\n');
 
 		return json({ msg: 'success', contents: rephrased });
 	} catch {
