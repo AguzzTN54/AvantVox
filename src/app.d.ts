@@ -1,16 +1,23 @@
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
 declare global {
 	namespace App {
+		type Fetch = typeof globalThis.fetch;
+		type Lang = 'en' | 'id';
 		type BasicArticle = { title: string; content: string };
 		interface LLMProvider {
-			rephrase(input: { title: string; content: string }): Promise<BasicArticle>;
+			rephrase(input: BasicArticle): Promise<BasicArticle>;
 		}
 		interface ArticleContents extends BasicArticle {
 			textContent?: string;
 			source: { url: string; siteName: string };
 			pubDate?: Date | string;
 		}
+
+		interface NewsProviderOptions {
+			fetch: Fetch;
+			lang: Lang;
+			query: string;
+		}
+		type NewsProviderFn = (opt: NewsProviderOptions) => Promise<App.ArticleContents[] | null>;
 	}
 }
 
