@@ -1,7 +1,8 @@
 import { fetchBingNews } from './bing';
 import { fetchGoogleNews } from './google';
+import { fetchGuardianNews } from './theguardian';
 
-type NewsApis = 'google' | 'bing';
+type NewsApis = 'google' | 'bing' | 'theguardian';
 
 interface NewsFeedOptions {
 	fetch: App.Fetch;
@@ -24,7 +25,8 @@ export class NewsFeed {
 		this.#query = query;
 		this.#providers = {
 			google: fetchGoogleNews,
-			bing: fetchBingNews
+			bing: fetchBingNews,
+			theguardian: fetchGuardianNews
 		};
 	}
 
