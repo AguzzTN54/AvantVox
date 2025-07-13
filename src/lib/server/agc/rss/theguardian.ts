@@ -38,7 +38,7 @@ interface GuardianResult {
 	response: GuardianResponse;
 }
 
-export const fetchGuardianNews: App.NewsProviderFn = async ({ fetch, query }) => {
+export const fetchGuardianNews: App.NewsProviderFn = async ({ fetch, query, length }) => {
 	try {
 		const encodedQuery = encodeURIComponent(query.trim());
 		const url = new URL('https://content.guardianapis.com/search');
@@ -53,7 +53,7 @@ export const fetchGuardianNews: App.NewsProviderFn = async ({ fetch, query }) =>
 		const contents: App.ArticleContents[] = [];
 
 		for (let i = 0; i < response.results.length; i++) {
-			if (contents.length >= 1) break; // pick only 5 items
+			if (contents.length >= length) break; // pick only 5 items
 			const { webPublicationDate: pubDate, fields, webUrl, webTitle: title } = response.results[i];
 			if (!webUrl || webUrl.match(/\/live\//)) continue; // move to the next item if has no article links
 			const content = fields?.body || '';

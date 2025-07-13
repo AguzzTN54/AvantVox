@@ -3,32 +3,38 @@ export class GeminiProvider implements App.LLMProvider {
 		if (!apiKey) throw new Error('Gemini API key is required');
 	}
 
-	async rephrase({ title, content }: App.BasicArticle): Promise<App.BasicArticle> {
+	async rephrase(articles: App.BasicArticle[]): Promise<App.BasicArticle[]> {
 		const body = {
 			system_instruction: {
 				parts: [
 					{
 						text:
-							// 'You are a helpful AI that rewrites articles for clarity and engagement.\n' +
-							// 'Return your response as strict JSON with two fields: `title` and `content`.\n' +
-							// 'Do not change the excerpt inside the singlequote or doublequote' +
-							// 'Preserve HTML tags in the content (e.g. <p>, <blockquote>, <img>).\n' +
-							// 'Do NOT include explanations or formatting outside the JSON object.\n' +
-							// 'Example output: { "title": "...", "content": "..." }'
-
-							'You are a helpful AI that rewrites and localizes news articles into Indonesian language.\n' +
-							'Return the result as a stringify from strict JSON object with two fields: "title" and "content".\n' +
-							'Use natural but follow EYD rule, formal Indonesian suitable for online news readers.\n' +
-							'Preserve any HTML tags in the content (e.g. <p>, <blockquote>, <img>).\n' +
-							'Do not include explanations or extra text — only return the stringified JSON object\n' +
-							// 'Example output: { "title": "Judul Terjemahan", "content": "<p>Artikel</p>" }'
-							'Example output: { "title": "...", "content": "..." }'
+							'You are a helpful AI that rewrites and localizes news articles into id-ID language.\n' +
+							'Use natural but formal Indonesian suitable for online news readers and follow the EYD rule.\n' +
+							'Preserve any HTML tags in the content (e.g., <p>, <blockquote>, <img>).\n' +
+							'For each article:\n' +
+							'- Rewrite the title and content into localized Indonesian.\n' +
+							'- Extract 3 relevant tags (keywords or topics) describing the article’s main subject.\n' +
+							'Tag rules:\n' +
+							'- Tags remain in English, all lowercase.\n' +
+							'- At least 2 tags must be a single word, the third tag still prioritize to be a single words but two words is acceptable.\n' +
+							'- Avoid country names, nationalities, or cultural identifiers (e.g., Indonesian, Chinese, Balinese).\n' +
+							'- Avoid generic tags like "news", "article", "information".\n' +
+							'- Be specific. Do not repeat similar tags (e.g., "football" and "soccer"). Pick only one.\n' +
+							'\n' +
+							'Return the result as a strict JSON string with this format:\n' +
+							'[{"title": "...", "content": "...", "tags": ["...", "...", "..."]}, {...}]\n' +
+							'Do not include explanations, headings, or extra text. Only return the stringified JSON array.'
 					}
 				]
 			},
 			contents: [
 				{
-					parts: [{ text: `Title:\n${title}` }, { text: `Article:\n${content}` }]
+					parts: [
+						{
+							text: `Articles:\n${JSON.stringify({ articles })}`
+						}
+					]
 				}
 			]
 		};
@@ -48,23 +54,19 @@ export class GeminiProvider implements App.LLMProvider {
 
 			const json = await res.json();
 			const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-
 			const jsonResult = extractJson(text);
-			const parsed = JSON.parse(jsonResult);
-			if (!parsed.title || !parsed.content) throw new Error('Missing fields');
-			return {
-				title: parsed.title.trim(),
-				content: parsed.content.trim()
-			};
+			const parsed: App.BasicArticle[] = JSON.parse(jsonResult);
+			if (!Array.isArray(parsed)) throw new Error('Parsing Error');
+			return parsed;
 		} catch (e) {
 			console.error('Failed proccess Gemini', { cause: e });
-			return { content: '', title: '' };
+			return [];
 		}
 	}
 }
 
 const extractJson = (text: string): string => {
-	const braceMatch = text.match(/{[\s\S]+}/);
+	const braceMatch = text.match(/\[[\s\S]+\]/);
 	if (braceMatch) return braceMatch[0].trim();
 
 	throw new Error('No JSON object found in response:\n' + text);

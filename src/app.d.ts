@@ -2,9 +2,9 @@ declare global {
 	namespace App {
 		type Fetch = typeof globalThis.fetch;
 		type Lang = 'en' | 'id';
-		type BasicArticle = { title: string; content: string };
+		type BasicArticle = { title: string; content: string; tags?: string[] };
 		interface LLMProvider {
-			rephrase(input: BasicArticle): Promise<BasicArticle>;
+			rephrase(articles: BasicArticle[]): Promise<BasicArticle[]>;
 		}
 		interface ArticleContents extends BasicArticle {
 			textContent?: string;
@@ -15,6 +15,7 @@ declare global {
 		interface NewsProviderOptions {
 			fetch: Fetch;
 			lang: Lang;
+			length: number;
 			query: string;
 		}
 		type NewsProviderFn = (opt: NewsProviderOptions) => Promise<App.ArticleContents[] | null>;

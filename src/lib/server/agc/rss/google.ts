@@ -69,7 +69,7 @@ const fetchGnewsArticle = async (
 		const articleUrl = await fetchArticleUrl(fetch, payload);
 		if (!articleUrl) return null;
 
-		console.log(`🔁 Redirecting to: ${articleUrl}`);
+		console.log(`🔁 Resolving ${articleUrl}`);
 		const content = await getArticleContents(fetch, articleUrl);
 		return content;
 	} catch (e) {
@@ -78,14 +78,14 @@ const fetchGnewsArticle = async (
 	}
 };
 
-export const fetchGoogleNews: App.NewsProviderFn = async ({ lang, query }) => {
+export const fetchGoogleNews: App.NewsProviderFn = async ({ lang, query, length }) => {
 	const url = getRssUrl(query, lang);
 	const parser = new RSSParser();
 	const parsedRSS = await parser.parseURL(url);
 	const contents = [];
 
 	for (let i = 0; i < parsedRSS.items.length; i++) {
-		if (contents.length >= 1) break; // pick only 5 items
+		if (contents.length >= length) break; // pick only 5 items
 		const { link, pubDate } = parsedRSS.items[i];
 		if (!link) continue; // move to the next item if has no article links
 		const content = await fetchGnewsArticle(fetch, link);

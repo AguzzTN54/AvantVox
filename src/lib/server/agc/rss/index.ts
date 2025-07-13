@@ -9,19 +9,22 @@ interface NewsFeedOptions {
 	newsApi: NewsApis;
 	lang?: App.Lang;
 	query?: string;
+	length?: number;
 }
 
 export class NewsFeed {
 	#fetch: App.Fetch;
 	#newsApi: NewsApis;
 	#lang: App.Lang;
+	#length: number;
 	#query: string;
 	#providers: Record<NewsApis, App.NewsProviderFn>;
 
-	constructor({ fetch, newsApi, lang = 'en', query = '' }: NewsFeedOptions) {
+	constructor({ fetch, newsApi, lang = 'en', query = '', length }: NewsFeedOptions) {
 		this.#fetch = fetch;
 		this.#newsApi = newsApi;
 		this.#lang = lang;
+		this.#length = length || 1;
 		this.#query = query;
 		this.#providers = {
 			google: fetchGoogleNews,
@@ -35,6 +38,7 @@ export class NewsFeed {
 		const fetch = this.#fetch;
 		const lang = this.#lang;
 		const query = this.#query;
-		return provider?.({ fetch, lang, query }) ?? null;
+		const length = this.#length;
+		return provider?.({ fetch, lang, query, length }) ?? null;
 	}
 }

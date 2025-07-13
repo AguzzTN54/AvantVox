@@ -29,8 +29,8 @@ export class LLM {
 		this.#model = model;
 	}
 
-	async rephrase(input: App.BasicArticle): Promise<App.BasicArticle> {
-		const result = await this.#providers[this.#model].rephrase(input);
+	async rephrase(articles: App.BasicArticle[]): Promise<App.BasicArticle[]> {
+		const result = await this.#providers[this.#model].rephrase(articles);
 		return result;
 	}
 }
@@ -38,7 +38,7 @@ export class LLM {
 // Stub placeholder until you implement them
 class DummyProvider implements App.LLMProvider {
 	constructor(private message: string) {}
-	async rephrase(): Promise<App.BasicArticle> {
+	async rephrase(): Promise<App.BasicArticle[]> {
 		throw new Error(this.message);
 	}
 }

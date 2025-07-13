@@ -21,7 +21,7 @@ export const getArticleContents = async (
 		});
 		const location = res.headers.get('location');
 		if (res.status >= 300 && res.status < 400 && location) {
-			console.log(`🔁 Redirecting to: ${location}`);
+			console.log(`🔁 Resolving ${location}`);
 			return getArticleContents(fetch, location);
 		}
 
@@ -38,7 +38,7 @@ export const getArticleContents = async (
 		const cleanContent = purify.sanitize(content || '');
 		if (!content || !textContent || !(siteName && title)) return null;
 		const source = { url: link, siteName };
-		console.log('✨ Article Fetched');
+		console.log(`✨ Article from ${siteName} is Fetched\n`);
 		return { content: cleanContent, textContent, title, source };
 	} catch {
 		return null;
@@ -46,16 +46,19 @@ export const getArticleContents = async (
 };
 
 export const rephrase = async (articles: App.ArticleContents[]): Promise<App.ArticleContents[]> => {
-	const result = articles.map(async ({ content, title, source, pubDate }) => {
-		const llm = new LLM({
-			model: 'gemini',
-			apiKeys: { gemini: env.PRIVATE_GEMINI_KEY }
-		});
+	console.log('⏳ Rephrase in process');
 
-		console.log('⏳ Rephrase in process');
-		const result = await llm.rephrase({ title, content });
-		return { ...result, pubDate, source };
+	const llmBody = articles.map(({ content, title }) => ({ title, content }));
+	const llm = new LLM({
+		model: 'gemini',
+		apiKeys: { gemini: env.PRIVATE_GEMINI_KEY }
 	});
 
-	return await Promise.all(result);
+	const llmResult = await llm.rephrase(llmBody);
+	const result = articles.map(({ pubDate, source }, i) => {
+		const { content, title, tags } = llmResult[i];
+		return { title, pubDate, tags, content, source };
+	});
+
+	return result;
 };
