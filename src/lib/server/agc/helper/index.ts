@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { Impit } from 'impit';
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
@@ -7,24 +8,17 @@ import { LLM } from '../llm';
 export const userAgent =
 	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36';
 
-export const getArticleContents = async (
-	fetch: App.Fetch,
-	link: string
-): Promise<App.ArticleContents | null> => {
-	try {
-		const res = await fetch(link, {
-			redirect: 'manual',
-			headers: {
-				'Accept-Language': 'en-US,en;q=0.9',
-				'User-Agent': userAgent
-			}
-		});
-		const location = res.headers.get('location');
-		if (res.status >= 300 && res.status < 400 && location) {
-			console.log(`🔁 Resolving ${location}`);
-			return getArticleContents(fetch, location);
-		}
+export const client = new Impit({
+	browser: 'chrome',
+	http3: true,
+	ignoreTlsErrors: true,
+	timeout: 1000 * 60 * 2 // 2 minutes
+});
 
+export const getArticleContents = async (link: string): Promise<App.ArticleContents | null> => {
+	try {
+		console.log(`🔁 Fetching ${link}`);
+		const res = await client.fetch(link);
 		const newshtml = await res.text();
 		const { window } = new JSDOM(newshtml, { url: link, pretendToBeVisual: true, userAgent });
 		const purify = DOMPurify(window);
@@ -38,7 +32,7 @@ export const getArticleContents = async (
 		const cleanContent = purify.sanitize(content || '');
 		if (!content || !textContent || !(siteName && title)) return null;
 		const source = { url: link, siteName };
-		console.log(`✨ Article from ${siteName} is Fetched\n`);
+		console.log(`✨ Article from [${siteName}] is Fetched\n`);
 		return { content: cleanContent, textContent, title, source };
 	} catch {
 		return null;
@@ -46,6 +40,11 @@ export const getArticleContents = async (
 };
 
 export const rephrase = async (articles: App.ArticleContents[]): Promise<App.ArticleContents[]> => {
+	if (articles.length < 1) {
+		console.log('❌ No Articles to Rephrase');
+		return [];
+	}
+
 	console.log('⏳ Rephrase in process');
 
 	const llmBody = articles.map(({ content, title }) => ({ title, content }));

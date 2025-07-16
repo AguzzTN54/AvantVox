@@ -1,5 +1,5 @@
 import RSSParser from 'rss-parser';
-import { getArticleContents, userAgent } from '../helper';
+import { getArticleContents, client } from '../helper';
 
 const isValidUrl = (url: string): boolean => {
 	try {
@@ -17,18 +17,16 @@ const getRssUrl = (query: string, lang?: App.Lang): string => {
 	return url;
 };
 
-const fetchArticleUrl = async (
-	fetch: App.Fetch,
-	payload: { 'f.req': string }
-): Promise<string | null> => {
+const fetchArticleUrl = async (payload: { 'f.req': string }): Promise<string | null> => {
 	try {
 		console.log('🔗 Resolving Article URL');
 		const headers = {
 			'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-			'User-Agent': userAgent
+			Referer: 'https://news.google.com/',
+			Origin: 'https://news.google.com'
 		};
-
-		const response = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute', {
+		const url = 'https://news.google.com/_/DotsSplashUi/data/batchexecute';
+		const response = await client.fetch(url, {
 			headers,
 			method: 'POST',
 			body: new URLSearchParams(payload).toString()
@@ -40,19 +38,16 @@ const fetchArticleUrl = async (
 		if (!isValidUrl(articleUrl)) return null;
 		return articleUrl;
 	} catch (e) {
-		console.error('Failed to Fetch Article URL', { cause: e });
+		console.error('Failed to Parse Article URL', { cause: e });
 		return null;
 	}
 };
 
-const fetchGnewsArticle = async (
-	fetch: App.Fetch,
-	link: string
-): Promise<App.ArticleContents | null> => {
+const fetchGnewsArticle = async (link: string): Promise<App.ArticleContents | null> => {
 	try {
 		console.log('📰 Fetching GNews Server');
 
-		const res = await fetch(link, { redirect: 'follow' });
+		const res = await client.fetch(link);
 		const gnews = await res.text();
 		const [, cwizStart] = gnews.split('<c-wiz');
 		const [cwizEnd] = cwizStart.split('</c-wiz');
@@ -66,11 +61,9 @@ const fetchGnewsArticle = async (
 				[['Fbv4je', JSON.stringify([...obj.slice(0, -6), ...obj.slice(-2)]), 'null', 'generic']]
 			])
 		};
-		const articleUrl = await fetchArticleUrl(fetch, payload);
+		const articleUrl = await fetchArticleUrl(payload);
 		if (!articleUrl) return null;
-
-		console.log(`🔁 Resolving ${articleUrl}`);
-		const content = await getArticleContents(fetch, articleUrl);
+		const content = await getArticleContents(articleUrl);
 		return content;
 	} catch (e) {
 		console.error(e);
@@ -80,15 +73,19 @@ const fetchGnewsArticle = async (
 
 export const fetchGoogleNews: App.NewsProviderFn = async ({ lang, query, length }) => {
 	const url = getRssUrl(query, lang);
+
+	const res = await client.fetch(url);
+	const xml = await res.text();
+
 	const parser = new RSSParser();
-	const parsedRSS = await parser.parseURL(url);
+	const parsedRSS = await parser.parseString(xml);
 	const contents = [];
 
 	for (let i = 0; i < parsedRSS.items.length; i++) {
 		if (contents.length >= length) break; // pick only 5 items
 		const { link, pubDate } = parsedRSS.items[i];
 		if (!link) continue; // move to the next item if has no article links
-		const content = await fetchGnewsArticle(fetch, link);
+		const content = await fetchGnewsArticle(link);
 		if (!content) continue; // move to the next item if can't get article contents
 		contents.push({ ...content, pubDate });
 	}

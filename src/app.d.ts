@@ -13,7 +13,6 @@ declare global {
 		}
 
 		interface NewsProviderOptions {
-			fetch: Fetch;
 			lang: Lang;
 			length: number;
 			query: string;

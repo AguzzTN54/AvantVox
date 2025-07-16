@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { client } from '../helper';
 
 interface GuardianArticleField {
 	headline: string;
@@ -38,7 +39,7 @@ interface GuardianResult {
 	response: GuardianResponse;
 }
 
-export const fetchGuardianNews: App.NewsProviderFn = async ({ fetch, query, length }) => {
+export const fetchGuardianNews: App.NewsProviderFn = async ({ query, length }) => {
 	try {
 		const encodedQuery = encodeURIComponent(query.trim());
 		const url = new URL('https://content.guardianapis.com/search');
@@ -47,7 +48,7 @@ export const fetchGuardianNews: App.NewsProviderFn = async ({ fetch, query, leng
 		url.searchParams.append('show-fields', 'main,headline,body,thumbnail');
 		if (encodedQuery) url.searchParams.append('q', encodedQuery);
 
-		const res = await fetch(url);
+		const res = await client.fetch(url.href);
 		const { response }: GuardianResult = (await res.json()) || {};
 		if (!response) return null;
 		const contents: App.ArticleContents[] = [];

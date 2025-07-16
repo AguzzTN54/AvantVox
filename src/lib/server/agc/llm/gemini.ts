@@ -1,3 +1,5 @@
+import { client } from '../helper';
+
 export class GeminiProvider implements App.LLMProvider {
 	constructor(private apiKey: string) {
 		if (!apiKey) throw new Error('Gemini API key is required');
@@ -40,7 +42,7 @@ export class GeminiProvider implements App.LLMProvider {
 		};
 
 		try {
-			const res = await fetch(
+			const res = await client.fetch(
 				'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
 				{
 					method: 'POST',
