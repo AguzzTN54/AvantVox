@@ -56,7 +56,7 @@ export const rephrase = async (articles: App.ArticleContents[]): Promise<App.Art
 	const llmResult = await llm.rephrase(llmBody);
 	const result = articles.map(({ pubDate, source }, i) => {
 		const { content, title, tags } = llmResult[i];
-		return { title, pubDate, tags, content, source };
+		return { title, pubDate, tags, source, content };
 	});
 
 	return result;
