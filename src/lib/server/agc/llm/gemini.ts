@@ -13,10 +13,11 @@ export class GeminiProvider implements App.LLMProvider {
 						text:
 							'You are a helpful AI that rewrites and localizes news articles into id-ID language.\n' +
 							'Use natural but formal Indonesian suitable for online news readers and follow the EYD rule.\n' +
-							'Preserve any HTML tags in the content (e.g., <p>, <blockquote>, <img>).\n' +
 							'For each article:\n' +
+							'- Preserve any HTML tags in the content (e.g., heading, <p>, <blockquote>, <img>).\n' +
 							'- Rewrite the title and content into localized Indonesian.\n' +
 							'- Extract 3 relevant tags (keywords or topics) describing the article’s main subject.\n' +
+							'- Ignore any section that looks like "Read more", "Also Read", "Related articles", or "You may also like" or any link/title/recomendation to another articles, as these are not part of the article.\n' +
 							'Tag rules:\n' +
 							'- Tags remain in English, all lowercase.\n' +
 							'- At least 2 tags must be a single word, the third tag still prioritize to be a single words but two words is acceptable.\n' +

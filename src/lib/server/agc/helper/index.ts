@@ -5,6 +5,14 @@ import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 import { LLM } from '../llm';
 
+const originalConsoleError = console.error;
+console.error = (msg, ...args) => {
+	if (typeof msg === 'string' && msg.includes('Could not parse CSS stylesheet')) {
+		return; // ignore this error
+	}
+	originalConsoleError(msg, ...args);
+};
+
 export const userAgent =
 	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36';
 
@@ -29,11 +37,12 @@ export const getArticleContents = async (link: string): Promise<App.ArticleConte
 
 		const reader = new Readability(window.document);
 		const { content, siteName, title, textContent } = reader.parse() || {};
-		const cleanContent = purify.sanitize(content || '');
-		if (!content || !textContent || !(siteName && title)) return null;
+		const cleanContent = purify.sanitize(content || '').replace(/\s+/g, ' ');
+		const cleanText = (textContent || '').replace(/\s+/g, ' ').trim();
+		if (!content || !cleanText || !(siteName && title)) return null;
 		const source = { url: link, siteName };
 		console.log(`✨ Article from [${siteName}] is Fetched\n`);
-		return { content: cleanContent, textContent, title, source };
+		return { title, source, content: cleanContent, textContent: cleanText };
 	} catch {
 		return null;
 	}
