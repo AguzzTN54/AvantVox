@@ -23,6 +23,35 @@ export const client = new Impit({
 	timeout: 1000 * 60 * 2 // 2 minutes
 });
 
+interface ParsedReadability {
+	title?: string | null;
+	content?: string | null;
+	textContent?: string | null;
+	length?: number | null;
+	excerpt?: string | null;
+	byline?: string | null;
+	dir?: string | null;
+	siteName?: string | null;
+	lang?: string | null;
+	publishedTime?: string | null;
+	thumbnail?: string;
+}
+
+const readContent = (document: Document): ParsedReadability => {
+	const reader = new Readability(document);
+	const parsed = reader.parse();
+
+	let thumbnail =
+		document.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+		document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
+	if (!thumbnail) {
+		const { window: w } = new JSDOM(parsed?.content || '');
+		thumbnail = w.document.querySelector('img')?.src || '';
+	}
+
+	return { thumbnail, ...(parsed || {}) };
+};
+
 export const getArticleContents = async (link: string): Promise<App.ArticleContents | null> => {
 	try {
 		console.log(`🔁 Fetching ${link}`);
@@ -35,14 +64,16 @@ export const getArticleContents = async (link: string): Promise<App.ArticleConte
 			ALLOWED_ATTR: ['src', 'alt', 'title', 'width', 'height']
 		});
 
-		const reader = new Readability(window.document);
-		const { content, siteName, title, textContent } = reader.parse() || {};
-		const cleanContent = purify.sanitize(content || '').replace(/\s+/g, ' ');
-		const cleanText = (textContent || '').replace(/\s+/g, ' ').trim();
-		if (!content || !cleanText || !(siteName && title)) return null;
+		const parser = readContent(window.document);
+		const { content: ctn, siteName, title, textContent: txt, thumbnail = '' } = parser;
+		const cleanSpace = (x: string): string => x.replace(/\s+/g, ' ').trim();
+		const content = cleanSpace(purify.sanitize(ctn || ''));
+		const textContent = cleanSpace(txt || '');
+		if (!content || !textContent || !(siteName && title)) return null;
+
 		const source = { url: link, siteName };
 		console.log(`✨ Article from [${siteName}] is Fetched\n`);
-		return { title, source, content: cleanContent, textContent: cleanText };
+		return { title, source, content, textContent, thumbnail };
 	} catch {
 		return null;
 	}
@@ -63,9 +94,9 @@ export const rephrase = async (articles: App.ArticleContents[]): Promise<App.Art
 	});
 
 	const llmResult = await llm.rephrase(llmBody);
-	const result = articles.map(({ pubDate, source }, i) => {
-		const { content, title, tags } = llmResult[i];
-		return { title, pubDate, tags, source, content };
+	const result = articles.map(({ pubDate, source, thumbnail }, i) => {
+		const { content, title, tags } = llmResult[i] || {};
+		return { title, pubDate, tags, source, thumbnail, content };
 	});
 
 	return result;

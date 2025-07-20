@@ -8,6 +8,7 @@ declare global {
 		}
 		interface ArticleContents extends BasicArticle {
 			textContent?: string;
+			thumbnail: string;
 			source: { url: string; siteName: string };
 			pubDate?: Date | string;
 		}
