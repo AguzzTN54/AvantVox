@@ -1,10 +1,10 @@
 import { json } from '@sveltejs/kit';
 import { rephrase } from '$lib/server/agc/helper';
-import { NewsFeed } from '$lib/server/agc/rss';
+import { NewsFeed } from '$lib/server/agc/news';
 
 export const GET = async () => {
 	try {
-		const newsFeed = new NewsFeed({ newsApi: 'theguardian', length: 2, query: 'lemper' });
+		const newsFeed = new NewsFeed({ newsApi: 'google', length: 2 });
 		const contents = (await newsFeed.fetchRssFeeds()) || [];
 		console.log('✅ Fetching Articles Done..');
 		const rephrased = await rephrase(contents);
